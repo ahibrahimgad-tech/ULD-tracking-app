@@ -197,8 +197,9 @@ footer = """
 }
 </style>
 <div class="footer">
-    <p>Designed by <b>Ahmed Ragab</b> ©</p>
+    <p>Designed by <b>Ahmed Gad</b> ©</p>
 </div>
 """
 
 st.markdown(footer, unsafe_allow_html=True)
+
