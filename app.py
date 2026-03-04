@@ -72,7 +72,7 @@ with tab1:
                     "Flight No": [flight_no],
                     "Employee Name": [employee_name],
                     "Remarks_in": [Remarks],
-                    "ULD Status": ["Status"],
+                    "ULD Status": [Status],
                     "Check-out Date": [""]
                 })
                 df = pd.concat([df, new_row], ignore_index=True)
@@ -202,6 +202,7 @@ footer = """
 """
 
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
