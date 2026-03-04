@@ -101,7 +101,7 @@ with tab2:
         if st.button("Check-Out 📤"):
             if checkout_flight and checkout_emp:
                 # Update ULD status
-                idx = df[(df["ULD No"] == checkout_uld) & (df["ULD Status"] == "Available")].index
+                idx = df[(df["ULD No"] == checkout_uld) & (df["ULD Status"] == "Serviceable")].index
                 df.loc[idx, "ULD Status"] = "Checked Out"
                 df.loc[idx, "Check-out Date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
                 
@@ -202,6 +202,7 @@ footer = """
 """
 
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
