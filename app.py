@@ -87,7 +87,7 @@ with tab2:
     st.subheader("Check-Out ULD")
     
     # Fetch only available ULDs
-    available_ulds = df[df["ULD Status"] == "Available"]
+    available_ulds = df[df["ULD Status"] == "Serviceable"]
     
     if not available_ulds.empty:
         col1, col2 = st.columns(2)
@@ -202,6 +202,7 @@ footer = """
 """
 
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
