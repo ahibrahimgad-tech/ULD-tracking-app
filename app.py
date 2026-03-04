@@ -141,7 +141,7 @@ with tab3:
         airlines = ["All"] + list(df["Airline"].dropna().unique())
         selected_airline = st.selectbox("🔍 Filter by Airline", airlines)
     with col2:
-        status_filter = st.radio("🔍 Filter by Status", ["All", "Available", "Checked Out"], horizontal=True)
+        status_filter = st.radio("🔍 Filter by Status", ["All","Serviceable", "Unserviceable", "Checked Out"], horizontal=True)
     
     # Apply Filters
     filtered_df = df.copy()
@@ -254,3 +254,4 @@ footer = """
 </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
