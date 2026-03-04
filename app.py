@@ -87,7 +87,7 @@ with tab2:
     st.subheader("Check-Out ULD")
     
     # Fetch only available ULDs
-    available_ulds = df[df["ULD Status"] == "Serviceable"]
+    available_ulds = df[df["ULD Status"] == "available"]
     
     if not available_ulds.empty:
         col1, col2 = st.columns(2)
@@ -101,7 +101,7 @@ with tab2:
         if st.button("Check-Out 📤"):
             if checkout_flight and checkout_emp:
                 # Update ULD status
-                idx = df[(df["ULD No"] == checkout_uld) & (df["ULD Status"] == "Serviceable")].index
+                idx = df[(df["ULD No"] == checkout_uld) & (df["ULD Status"] == "available")].index
                 df.loc[idx, "ULD Status"] = "Checked Out"
                 df.loc[idx, "Check-out Date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
                 
@@ -202,6 +202,7 @@ footer = """
 """
 
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
