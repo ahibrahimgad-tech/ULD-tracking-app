@@ -7,18 +7,18 @@ import plotly.express as px
 # Page configuration
 st.set_page_config(page_title="ULD Tracking System", layout="wide", page_icon="✈️")
 
-# Data file (Renamed to start fresh with English columns)
+# Data file
 DATA_FILE = "uld_data_en.csv"
 
 # Function to load data
 def load_data():
     if os.path.exists(DATA_FILE):
         df = pd.read_csv(DATA_FILE)
-        # Ensure new columns exist
-        if "ULD Status" not in df.columns:
-            df["ULD Status"] = "Available"
-        if "Check-out Date" not in df.columns:
-            df["Check-out Date"] = ""
+        # Ensure all columns exist
+        expected_columns = ["Date", "ULD No", "Airline", "Flight No", "Employee Name", "Remarks_in", "ULD Status", "Check-out Date", "Remarks_out"]
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = ""
         return df
     else:
         df = pd.DataFrame(columns=[
@@ -34,14 +34,15 @@ def save_data(df):
 
 df = load_data()
 
-st.title("✈️ CACC- ULD Tracking System ")
+st.title("✈️ CACC - ULD Tracking System ")
 
-# Create Tabs
-tab1, tab2, tab3, tab4 = st.tabs([
+# Create Tabs (Added a 5th tab for History)
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📝 Check-In ULD", 
     "📤 Check-Out ULD", 
     "📊 Reports & Export", 
-    "📈 Dashboard"
+    "📈 Dashboard",
+    "🕒 ULD History" # التبويب الجديد
 ])
 
 # ----------------- Tab 1: Check-In ULD -----------------
@@ -55,15 +56,18 @@ with tab1:
         flight_no = st.text_input("Arrival Flight No")
     
     with col2:
-        Status = st.selectbox("Status", ["serviceable ", "UNserviceable"])
-        employee_name = st.selectbox("Agent", ["Ahmed Ragab ", "Mohamed Fathy","ULD Control ","Dispatch Team","Ramp Team"])
+        # تحديد الحالة هنا
+        Status = st.selectbox("Status", ["Serviceable", "Unserviceable"])
+        employee_name = st.selectbox("Agent", ["Ahmed Ragab", "Mohamed Fathy","ULD Control","Dispatch Team","Ramp Team"])
         remarks = st.text_area("Remarks")
         
     if st.button("Save Data (Check-In) 💾"):
         if uld_no and flight_no and employee_name:
-            # Check if ULD is already available to prevent duplicates
-            if not df[(df["ULD No"] == uld_no) & (df["ULD Status"] == "Available")].empty:
-                st.warning("⚠️ This ULD is already registered as (Available) in the station!")
+            # التأكد من أن المعدة ليست موجودة بالفعل في المحطة (سواء كانت صالحة أو غير صالحة)
+            in_station_check = df[(df["ULD No"] == uld_no) & (df["ULD Status"].isin(["Serviceable", "Unserviceable"]))]
+            
+            if not in_station_check.empty:
+                st.warning("⚠️ This ULD is already registered in the station!")
             else:
                 new_row = pd.DataFrame({
                     "Date": [datetime.datetime.now().strftime("%Y-%m-%d %H:%M")],
@@ -71,9 +75,10 @@ with tab1:
                     "Airline": [airline],
                     "Flight No": [flight_no],
                     "Employee Name": [employee_name],
-                  #---  "Remarks_in": [Remarks],----
-                    "ULD Status": [Status],
-                    "Check-out Date": [""]
+                    "Remarks_in": [remarks],
+                    "ULD Status": [Status], # حفظ الحالة (Serviceable/Unserviceable)
+                    "Check-out Date": [""],
+                    "Remarks_out": [""] 
                 })
                 df = pd.concat([df, new_row], ignore_index=True)
                 save_data(df)
@@ -82,12 +87,13 @@ with tab1:
         else:
             st.warning("⚠️ Please fill in mandatory fields (ULD No, Flight No, Employee Name).")
 
+
 # ----------------- Tab 2: Check-Out ULD -----------------
 with tab2:
     st.subheader("Check-Out ULD")
     
-    # Fetch only available ULDs
-    available_ulds = df[df["ULD Status"] == "available"]
+    # البحث عن المعدات التي حالتها Serviceable أو Unserviceable فقط
+    available_ulds = df[df["ULD Status"].isin(["Serviceable", "Unserviceable"])]
     
     if not available_ulds.empty:
         col1, col2 = st.columns(2)
@@ -100,15 +106,22 @@ with tab2:
             
         if st.button("Check-Out 📤"):
             if checkout_flight and checkout_emp:
-                # Update ULD status
-                idx = df[(df["ULD No"] == checkout_uld) & (df["ULD Status"] == "available")].index
+                # تحديد الصف الخاص بالمعدة التي يتم إخراجها
+                idx = df[(df["ULD No"] == checkout_uld) & (df["ULD Status"].isin(["Serviceable", "Unserviceable"]))].index
+                
+                # تحديث الحالة إلى Checked Out
                 df.loc[idx, "ULD Status"] = "Checked Out"
                 df.loc[idx, "Check-out Date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
                 
-                # Append checkout notes to old remarks
-                old_remarks = df.loc[idx, "Remarks_out"].values[0]
-                new_note = f"{old_remarks} | Checked out on flight {checkout_flight} by {checkout_emp}. {checkout_remarks}"
-                df.loc[idx, "Remarks"] = new_note
+                # إضافة ملاحظات الإخراج
+                old_remarks = str(df.loc[idx, "Remarks_out"].values[0])
+                if old_remarks == "nan" or old_remarks == "": 
+                    old_remarks = ""
+                else:
+                    old_remarks += " | "
+                    
+                new_note = f"{old_remarks}Checked out on flight {checkout_flight} by {checkout_emp}. {checkout_remarks}"
+                df.loc[idx, "Remarks_out"] = new_note
                 
                 save_data(df)
                 st.success(f"✅ ULD {checkout_uld} checked out successfully!")
@@ -116,7 +129,7 @@ with tab2:
             else:
                 st.warning("⚠️ Please enter Departure Flight No and Employee Name.")
     else:
-        st.info("💡 No available ULDs in the station to check out.")
+        st.info("💡 No ULDs currently available in the station to check out.")
 
 # ----------------- Tab 3: Reports & Export -----------------
 with tab3:
@@ -128,7 +141,7 @@ with tab3:
         airlines = ["All"] + list(df["Airline"].dropna().unique())
         selected_airline = st.selectbox("🔍 Filter by Airline", airlines)
     with col2:
-        status_filter = st.radio("🔍 Filter by Status", ["All","serviceable ", "UNserviceable", "Checked Out"], horizontal=True)
+        status_filter = st.radio("🔍 Filter by Status", ["All", "Available", "Checked Out"], horizontal=True)
     
     # Apply Filters
     filtered_df = df.copy()
@@ -180,7 +193,47 @@ with tab4:
             st.plotly_chart(fig2, use_container_width=True)
     else:
         st.info("Not enough data to display statistics yet.")
-        # ----------------- Footer (حقوق الملكية) -----------------
+
+# ----------------- Tab 5: ULD History (التبويب الجديد) -----------------
+with tab5:
+    st.subheader("🔍 ULD Full History")
+    st.write("ابحث عن رقم المعدة لمعرفة كل حركاتها منذ تسجيلها.")
+    
+    # مربع البحث عن المعدة
+    search_uld = st.text_input("Enter ULD No to search:")
+    
+    if search_uld:
+        # تصفية البيانات لتطابق رقم المعدة
+        uld_history = df[df["ULD No"].str.contains(search_uld, case=False, na=False)]
+        
+        if not uld_history.empty:
+            st.success(f"✅ Found {len(uld_history)} record(s) for ULD: **{search_uld.upper()}**")
+            
+            # عرض البيانات كجدول شامل
+            st.dataframe(uld_history, use_container_width=True)
+            
+            st.markdown("---")
+            st.markdown("### 📅 Timeline / السجل الزمني")
+            
+            # عرض التفاصيل بشكل جميل وسهل القراءة
+            for index, row in uld_history.iterrows():
+                # تحديد لون بناءً على الحالة
+                status_icon = "🟢" if row['ULD Status'] == "Available" else "🔴"
+                
+                with st.expander(f"{status_icon} Date In: {row['Date']} | Status: {row['ULD Status']}"):
+                    st.write(f"**Airline:** {row['Airline']}")
+                    st.write(f"**Arrival Flight No:** {row['Flight No']}")
+                    st.write(f"**Handled By (In):** {row['Employee Name']}")
+                    st.write(f"**Check-In Remarks:** {row['Remarks_in']}")
+                    
+                    if pd.notna(row['Check-out Date']) and row['Check-out Date'] != "":
+                        st.markdown("---")
+                        st.write(f"**Check-Out Date:** {row['Check-out Date']}")
+                        st.write(f"**Check-Out Details:** {row['Remarks_out']}")
+        else:
+            st.warning(f"⚠️ No history found for ULD: {search_uld}")
+
+# ----------------- Footer (حقوق الملكية) -----------------
 footer = """
 <style>
 .footer {
@@ -200,16 +253,4 @@ footer = """
     <p>Designed by <b>Ahmed Gad</b> ©</p>
 </div>
 """
-
 st.markdown(footer, unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
