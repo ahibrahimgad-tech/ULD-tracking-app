@@ -1,22 +1,23 @@
-Date,ULD No,Airline,Flight No,Employee Name,Remarks_in,ULD Status,Check-out Date,Remarks_out,Remarks
+Date,ULD No,Airline,Flight No,Employee Name,Remarks_in,ULD Status,Check-out Date,Remarks_out
 3/3/2026 23:57,PMD33766MB,MB,MNB542/27FEB26,Ahmed Ragab ,,Checked Out,3/4/2026 0:00,nan | Checked out on flight MS SIDE  by AHMED SAIED. ,
-3/3/2026 23:58,PMC04878JE,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
+3/3/2026 23:58,PMC04878JE,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
 3/3/2026 23:58,PMC99425MB,MB,MNB542/27FEB26,Ahmed Ragab ,,Checked Out,3/4/2026 0:25,,nan | Checked out on flight EAS Side by M.FATHY . 
-3/3/2026 23:58,PMC68372FF,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:58,PMC04680JE,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:58,PMD33663MB,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:58,PMC04225JE,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:58,PMC03352JE,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:59,PMD33657MB,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:59,PMC02719JE,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:59,PMC03783JE,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:59,PMD33667MD,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:59,PAG0072MB,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:59,PLA22552MB,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:59,PLA22365MB,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/3/2026 23:59,PLA22675MB,MB,MNB542/27FEB26,Ahmed Ragab ,,available,,,
-3/4/2026 0:05,PLA22675MB,MB,From MS Side,Ahmed Ragab ,,available,,,
+3/3/2026 23:58,PMC68372FF,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:58,PMC04680JE,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:58,PMD33663MB,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:58,PMC04225JE,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:58,PMC03352JE,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:59,PMD33657MB,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:59,PMC02719JE,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:59,PMC03783JE,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:59,PMD33667MD,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:59,PAG0072MB,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:59,PLA22552MB,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:59,PLA22365MB,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/3/2026 23:59,PLA22675MB,MB,MNB542/27FEB26,Ahmed Ragab ,,serviceable,,,
+3/4/2026 0:05,PLA22675MB,MB,From MS Side,Ahmed Ragab ,,serviceable,,,
 3/4/2026 0:07,PKC00022SVI,RMX,From EAS Side ,Ahmed Ragab ,Without net ,UNserviceable,,,
+
 
 
 
