@@ -71,7 +71,7 @@ with tab1:
                     "Airline": [airline],
                     "Flight No": [flight_no],
                     "Employee Name": [employee_name],
-                    "Remarks": [Remarks_out],
+                    "Remarks_in": [Remarks],
                     "ULD Status": ["Status"],
                     "Check-out Date": [""]
                 })
@@ -202,6 +202,7 @@ footer = """
 """
 
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
 
