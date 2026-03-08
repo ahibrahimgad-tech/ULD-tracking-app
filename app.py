@@ -80,7 +80,7 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         uld_no = st.text_input("ULD No")
-        airline = st.selectbox("Airline", ["RMX", "SVI", "BBT", "MNG", "SH","Avairy", "OTHER"])
+        airline = st.selectbox("Airline", ["RMX", "SVI", "BBT", "MNG", "SH","Avairy", "Air Challenge"])
         flight_no = st.text_input("Arrival Flight No")
     
     with col2:
@@ -273,5 +273,6 @@ footer = """
 </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
