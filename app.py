@@ -162,34 +162,33 @@ with tab2:
     else:
         st.info("💡 No ULDs currently available in the station.")
 
-# [تبويبات التقارير، الداشبورد، والهيستوري تظل بدون تغيير]
-with tab3:
-    st.subheader("ULD Movement Report")
-    if not df.empty:
-        col1, col2 = st.columns(2)
-        with col1:
-            airlines = ["All"] + list(df["Airline"].dropna().unique())
-            selected_airline = st.selectbox("🔍 Filter by Airline", airlines)
-        with col2:
-            status_filter = st.radio("🔍 Filter by Status", ["All","Serviceable", "Unserviceable", "Checked Out"], horizontal=True)
-        filtered_df = df.copy()
-        if selected_airline != "All": filtered_df = filtered_df[filtered_df["Airline"] == selected_airline]
-        if status_filter != "All": filtered_df = filtered_df[filtered_df["ULD Status"] == status_filter]
-        st.dataframe(filtered_df, use_container_width=True)
-    else:
-        st.info("No data available yet.")
 
+# ----------------- Tab 4: Dashboard -----------------
 with tab4:
     st.subheader("ULD Statistics")
+    
     if not df.empty and "ULD Status" in df.columns:
-        available_df = df[df["ULD Status"].isin(["Serviceable", "Unserviceable"])]
-        if not available_df.empty:
-            airline_counts = available_df["Airline"].value_counts().reset_index()
-            fig1 = px.pie(airline_counts, names="Airline", values="count", title="Available ULDs by Airline")
-            st.plotly_chart(fig1, use_container_width=True)
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # تم التعديل لتشمل الحالات المتاحة (Serviceable/Unserviceable)
+            available_df = df[df["ULD Status"].isin(["Serviceable", "Unserviceable"])]
+            if not available_df.empty:
+                airline_counts = available_df["Airline"].value_counts().reset_index()
+                airline_counts.columns = ["Airline", "Count"]
+                fig1 = px.pie(airline_counts, names="Airline", values="Count", title="Currently Available ULDs by Airline")
+                st.plotly_chart(fig1, use_container_width=True)
+            else:
+                st.info("No available ULDs to show statistics.")
+                
+        with col2:
+            status_counts = df["ULD Status"].value_counts().reset_index()
+            status_counts.columns = ["Status", "Count"]
+            fig2 = px.bar(status_counts, x="Status", y="Count", title="Total ULD Movement", color="Status")
+            st.plotly_chart(fig2, use_container_width=True)
     else:
         st.info("Not enough data to display statistics yet.")
-
+# ----------------- Tab 5: ULD History -----------------
 with tab5:
     st.subheader("🔍 ULD Full History")
     search_uld = st.text_input("Enter ULD No to search:")
@@ -200,5 +199,6 @@ with tab5:
         else:
             st.warning(f"⚠️ No history found for ULD: {search_uld}")
 
-footer = """<div style="position: fixed; left: 0; bottom: 0; width: 100%; text-align: center; color: #6c757d; padding: 10px;">Designed by <b>Ahmed Gad</b> ©</div>"""
+footer = """<div style="position: fixed; left: 0; bottom: 0; width: 100%; text-align: center; color: #6c757d; padding: 10px;">Designed by <b>Ahmed Ragab</b> ©</div>"""
 st.markdown(footer, unsafe_allow_html=True)
+
