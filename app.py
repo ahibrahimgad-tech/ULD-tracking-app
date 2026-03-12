@@ -84,13 +84,14 @@ agent_list = sorted([
     "Ahmed Ragab", "Mohamed Fathy"
 ])
 
-# Create Tabs 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+# Create Tabs (تم إضافة تبويب Handover Sheet)
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📝 Check-In ULD", 
     "📤 Check-Out ULD", 
     "📊 Reports & Export", 
     "📈 Dashboard",
-    "🕒 ULD History"
+    "🕒 ULD History",
+    "🤝 Handover Sheet"
 ])
 
 # ----------------- Tab 1: Check-In ULD -----------------
@@ -242,6 +243,51 @@ with tab5:
             st.dataframe(uld_history, use_container_width=True)
         else:
             st.warning(f"⚠️ No history found for ULD: {search_uld}")
+
+# ----------------- Tab 6: Handover Sheet -----------------
+with tab6:
+    st.subheader("🤝 Shift Handover Report (نموذج تسليم وتسلم)")
+    
+    if not df.empty:
+        col1, col2 = st.columns(2)
+        with col1:
+            handover_date = st.date_input("Select Date", datetime.date.today())
+        with col2:
+            handover_agent = st.selectbox("Select Agent (Shift Owner)", ["All"] + agent_list, key="handover_agent")
+            
+        st.markdown("---")
+        date_str = handover_date.strftime("%Y-%m-%d")
+        
+        # 1. Received ULDs (Check-In)
+        st.markdown("### 📥 ULDs Received (معدات تم استلامها)")
+        in_mask = df["Date"].astype(str).str.startswith(date_str)
+        if handover_agent != "All":
+            in_mask = in_mask & (df["Employee Name"] == handover_agent)
+            
+        df_in = df[in_mask][["Date", "ULD No", "Airline", "Flight No", "Employee Name", "ULD Status"]]
+        st.dataframe(df_in, use_container_width=True, hide_index=True)
+        
+        # 2. Dispatched ULDs (Check-Out)
+        st.markdown("### 📤 ULDs Dispatched (معدات تم خروجها)")
+        out_mask = df["Check-out Date"].astype(str).str.startswith(date_str)
+        if handover_agent != "All":
+            # نبحث عن اسم الموظف داخل الملاحظات لأننا نسجل اسم موظف الخروج هناك
+            out_mask = out_mask & (df["Remarks_out"].astype(str).str.contains(handover_agent, na=False))
+            
+        df_out = df[out_mask][["Check-out Date", "ULD No", "Airline", "ULD Status", "Remarks_out"]]
+        st.dataframe(df_out, use_container_width=True, hide_index=True)
+        
+        # Print / Signature Area
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        col_sig1, col_sig2 = st.columns(2)
+        with col_sig1:
+            st.markdown(f"**Handed Over By (المُسلِّم):** {'_' * 30}")
+        with col_sig2:
+            st.markdown(f"**Received By (المُستلِم):** {'_' * 30}")
+            
+        st.info("💡 لطباعة النموذج أو حفظه كـ PDF، اضغط على `Ctrl + P` (أو `Cmd + P` في الماك) من لوحة المفاتيح.")
+    else:
+        st.info("No data available to generate handover.")
 
 # ----------------- Footer -----------------
 footer = """<div style="position: fixed; left: 0; bottom: 0; width: 100%; text-align: center; color: #6c757d; padding: 10px; border-top: 1px solid #eaeaea; background-color: white; z-index: 100;">Designed by <b>Ahmed Ragab</b> ©</div>"""
