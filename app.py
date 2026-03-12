@@ -3,6 +3,7 @@ import pandas as pd
 import datetime
 import plotly.express as px
 import gspread
+import time
 
 # Page configuration
 st.set_page_config(page_title="CACC - ULD Tracking System", layout="wide", page_icon="✈️")
@@ -10,14 +11,12 @@ st.set_page_config(page_title="CACC - ULD Tracking System", layout="wide", page_
 # --- Google Sheets Connection ---
 @st.cache_resource
 def init_connection():
-    # استدعاء المفاتيح السرية من إعدادات Streamlit
     credentials = dict(st.secrets["gcp_service_account"])
     gc = gspread.service_account_from_dict(credentials)
     return gc
 
 try:
     gc = init_connection()
-    # اسم ملف جدول جوجل (تأكد أنك سميته بنفس هذا الاسم في Google Sheets)
     SHEET_NAME = "ULD_Database"
 except Exception as e:
     st.error("⚠️ فشل الاتصال بقاعدة البيانات. تأكد من إعدادات Streamlit Secrets.")
@@ -60,6 +59,16 @@ df = load_data()
 
 st.title("✈️ CACC - ULD Tracking System ")
 
+# --- نظام إشعارات النجاح ---
+# تهيئة متغير الجلسة لحفظ الرسالة
+if "success_msg" not in st.session_state:
+    st.session_state.success_msg = None
+
+# عرض الرسالة إذا كانت موجودة، ثم مسحها لكي لا تظهر مجدداً إلا بعملية جديدة
+if st.session_state.success_msg:
+    st.success(st.session_state.success_msg)
+    st.session_state.success_msg = None
+
 # القائمة المحدثة لأسماء الموظفين (Agents)
 agent_list = sorted([
     "Islam salah", "Sherif Talal", "Ahmed Raouf", "Saleh Elsayed", "Mostafa Atta", 
@@ -96,7 +105,6 @@ with tab1:
     
     with col2:
         Status = st.selectbox("Status", ["Serviceable", "Unserviceable"])
-        # تم استخدام القائمة المحدثة هنا
         employee_name = st.selectbox("Agent", agent_list)
         remarks = st.text_area("Remarks")
         
@@ -120,27 +128,28 @@ with tab1:
                 })
                 df = pd.concat([df, new_row], ignore_index=True)
                 save_data(df)
-                st.success("✅ ULD checked in successfully!")
+                
+                # حفظ رسالة النجاح في الجلسة قبل التحديث
+                st.session_state.success_msg = f"✅ ULD {uld_no} Checked-In successfully!"
                 st.rerun()
         else:
             st.warning("⚠️ Please fill in mandatory fields.")
 
-# (بقية التبويبات تظل كما هي في الكود الأصلي)
-# ... [تم اختصار العرض هنا للحفاظ على التركيز على التعديل المطلوب] ...
 
+# ----------------- Tab 2: Check-Out ULD -----------------
 with tab2:
     st.subheader("Check-Out ULD")
     if not df.empty and "ULD Status" in df.columns:
         available_ulds = df[df["ULD Status"].isin(["Serviceable", "Unserviceable"])]
     else:
         available_ulds = pd.DataFrame()
+        
     if not available_ulds.empty:
         col1, col2 = st.columns(2)
         with col1:
             checkout_uld = st.selectbox("Select ULD No to Check-Out", available_ulds["ULD No"].tolist())
             checkout_flight = st.text_input("Departure Flight No")
         with col2:
-            # تم تحويل هذا الحقل أيضاً ليكون اختياراً من القائمة المحدثة بدلاً من كتابة نصية
             checkout_emp = st.selectbox("Handing Over Employee Name", agent_list)
             checkout_remarks = st.text_area("Check-out Remarks (Optional)")
             
@@ -155,13 +164,48 @@ with tab2:
                 new_note = f"{old_remarks}Checked out on flight {checkout_flight} by {checkout_emp}. {checkout_remarks}"
                 df.loc[idx, "Remarks_out"] = new_note
                 save_data(df)
-                st.success(f"✅ ULD {checkout_uld} checked out successfully!")
+                
+                # حفظ رسالة النجاح في الجلسة قبل التحديث
+                st.session_state.success_msg = f"✅ ULD {checkout_uld} Checked-Out successfully!"
                 st.rerun()
             else:
                 st.warning("⚠️ Please enter Departure Flight No and Employee Name.")
     else:
         st.info("💡 No ULDs currently available in the station.")
 
+# ----------------- Tab 3: Reports & Export -----------------
+with tab3:
+    st.subheader("ULD Movement Report")
+    if not df.empty:
+        col1, col2 = st.columns(2)
+        with col1:
+            airlines = ["All"] + list(df["Airline"].dropna().unique())
+            selected_airline = st.selectbox("🔍 Filter by Airline", airlines)
+        with col2:
+            status_filter = st.radio("🔍 Filter by Status", ["All","Serviceable", "Unserviceable", "Checked Out"], horizontal=True)
+            
+        filtered_df = df.copy()
+        if selected_airline != "All":
+            filtered_df = filtered_df[filtered_df["Airline"] == selected_airline]
+        if status_filter != "All":
+            filtered_df = filtered_df[filtered_df["ULD Status"] == status_filter]
+            
+        st.dataframe(filtered_df, use_container_width=True)
+        
+        @st.cache_data
+        def convert_df(df_to_export):
+            return df_to_export.to_csv(index=False).encode('utf-8')
+
+        if not filtered_df.empty:
+            csv = convert_df(filtered_df)
+            st.download_button(
+                label=f"📥 Export Report to CSV",
+                data=csv,
+                file_name=f'uld_reports.csv',
+                mime='text/csv',
+            )
+    else:
+        st.info("No data available yet.")
 
 # ----------------- Tab 4: Dashboard -----------------
 with tab4:
@@ -171,7 +215,6 @@ with tab4:
         col1, col2 = st.columns(2)
         
         with col1:
-            # تم التعديل لتشمل الحالات المتاحة (Serviceable/Unserviceable)
             available_df = df[df["ULD Status"].isin(["Serviceable", "Unserviceable"])]
             if not available_df.empty:
                 airline_counts = available_df["Airline"].value_counts().reset_index()
@@ -188,6 +231,7 @@ with tab4:
             st.plotly_chart(fig2, use_container_width=True)
     else:
         st.info("Not enough data to display statistics yet.")
+
 # ----------------- Tab 5: ULD History -----------------
 with tab5:
     st.subheader("🔍 ULD Full History")
@@ -199,6 +243,6 @@ with tab5:
         else:
             st.warning(f"⚠️ No history found for ULD: {search_uld}")
 
-footer = """<div style="position: fixed; left: 0; bottom: 0; width: 100%; text-align: center; color: #6c757d; padding: 10px;">Designed by <b>Ahmed Ragab</b> ©</div>"""
+# ----------------- Footer -----------------
+footer = """<div style="position: fixed; left: 0; bottom: 0; width: 100%; text-align: center; color: #6c757d; padding: 10px; border-top: 1px solid #eaeaea; background-color: white; z-index: 100;">Designed by <b>Ahmed Ragab</b> ©</div>"""
 st.markdown(footer, unsafe_allow_html=True)
-
