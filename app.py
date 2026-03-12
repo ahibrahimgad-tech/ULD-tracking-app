@@ -236,14 +236,39 @@ with tab4:
 # ----------------- Tab 5: ULD History -----------------
 with tab5:
     st.subheader("🔍 ULD Full History")
+    st.write("ابحث عن رقم المعدة لمعرفة كل حركاتها منذ تسجيلها.")
+    
     search_uld = st.text_input("Enter ULD No to search:")
+    
     if search_uld and not df.empty:
         uld_history = df[df["ULD No"].astype(str).str.contains(search_uld, case=False, na=False)]
+        
         if not uld_history.empty:
+            st.success(f"✅ Found {len(uld_history)} record(s) for ULD: **{search_uld.upper()}**")
+            
             st.dataframe(uld_history, use_container_width=True)
+            
+            st.markdown("---")
+            st.markdown("### 📅 Timeline / السجل الزمني")
+            
+            for index, row in uld_history.iterrows():
+                # تم التعديل لتتوافق الأيقونات مع حالة المعدة الحالية
+                status_icon = "🟢" if row['ULD Status'] in ["Serviceable", "Unserviceable"] else "🔴"
+                
+                with st.expander(f"{status_icon} Date In: {row['Date']} | Status: {row['ULD Status']}"):
+                    st.write(f"**Airline:** {row['Airline']}")
+                    st.write(f"**Arrival Flight No:** {row['Flight No']}")
+                    st.write(f"**Handled By (In):** {row['Employee Name']}")
+                    st.write(f"**Check-In Remarks:** {row['Remarks_in']}")
+                    
+                    if pd.notna(row['Check-out Date']) and str(row['Check-out Date']).strip() != "":
+                        st.markdown("---")
+                        st.write(f"**Check-Out Date:** {row['Check-out Date']}")
+                        st.write(f"**Check-Out Details:** {row['Remarks_out']}")
         else:
             st.warning(f"⚠️ No history found for ULD: {search_uld}")
 
 # ----------------- Footer -----------------
 footer = """<div style="position: fixed; left: 0; bottom: 0; width: 100%; text-align: center; color: #6c757d; padding: 10px; border-top: 1px solid #eaeaea; background-color: white; z-index: 100;">Designed by <b>Ahmed Ragab</b> ©</div>"""
 st.markdown(footer, unsafe_allow_html=True) 
+
