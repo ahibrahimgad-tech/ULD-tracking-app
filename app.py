@@ -60,11 +60,9 @@ df = load_data()
 st.title("✈️ CACC - ULD Tracking System ")
 
 # --- نظام إشعارات النجاح ---
-# تهيئة متغير الجلسة لحفظ الرسالة
 if "success_msg" not in st.session_state:
     st.session_state.success_msg = None
 
-# عرض الرسالة إذا كانت موجودة، ثم مسحها لكي لا تظهر مجدداً إلا بعملية جديدة
 if st.session_state.success_msg:
     st.success(st.session_state.success_msg)
     st.session_state.success_msg = None
@@ -84,14 +82,14 @@ agent_list = sorted([
     "Ahmed Ragab", "Mohamed Fathy"
 ])
 
-# Create Tabs (تم إضافة تبويب Handover Sheet)
+# Create Tabs (Added Tab 6 for Handover)
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📝 Check-In ULD", 
     "📤 Check-Out ULD", 
     "📊 Reports & Export", 
     "📈 Dashboard",
     "🕒 ULD History",
-    "🤝 Handover Sheet"
+    "🖨️ Handover Sheet"
 ])
 
 # ----------------- Tab 1: Check-In ULD -----------------
@@ -130,7 +128,6 @@ with tab1:
                 df = pd.concat([df, new_row], ignore_index=True)
                 save_data(df)
                 
-                # حفظ رسالة النجاح في الجلسة قبل التحديث
                 st.session_state.success_msg = f"✅ ULD {uld_no} Checked-In successfully!"
                 st.rerun()
         else:
@@ -166,7 +163,6 @@ with tab2:
                 df.loc[idx, "Remarks_out"] = new_note
                 save_data(df)
                 
-                # حفظ رسالة النجاح في الجلسة قبل التحديث
                 st.session_state.success_msg = f"✅ ULD {checkout_uld} Checked-Out successfully!"
                 st.rerun()
             else:
@@ -211,10 +207,8 @@ with tab3:
 # ----------------- Tab 4: Dashboard -----------------
 with tab4:
     st.subheader("ULD Statistics")
-    
     if not df.empty and "ULD Status" in df.columns:
         col1, col2 = st.columns(2)
-        
         with col1:
             available_df = df[df["ULD Status"].isin(["Serviceable", "Unserviceable"])]
             if not available_df.empty:
@@ -244,50 +238,176 @@ with tab5:
         else:
             st.warning(f"⚠️ No history found for ULD: {search_uld}")
 
-# ----------------- Tab 6: Handover Sheet -----------------
+# ----------------- Tab 6: Handover Sheet (NEW) -----------------
 with tab6:
-    st.subheader("🤝 Shift Handover Report (نموذج تسليم وتسلم)")
+    st.subheader("🖨️ Generate Handover Sheet")
+    st.write("قم بتحديد اليوم وشركة الطيران لإنشاء نموذج التسليم مطابق للملف الورقي.")
     
-    if not df.empty:
-        col1, col2 = st.columns(2)
-        with col1:
-            handover_date = st.date_input("Select Date", datetime.date.today())
-        with col2:
-            handover_agent = st.selectbox("Select Agent (Shift Owner)", ["All"] + agent_list, key="handover_agent")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        ho_date = st.date_input("Select Date", datetime.date.today())
+    with col2:
+        ho_airline = st.selectbox("Select Airline for Handover", ["All", "RMX", "SVI", "BBT", "MNG", "SH","Avairy","National Air","MAS Air","Air Challenge"])
+    with col3:
+        ho_type = st.selectbox("Movement Type", ["Check-In (Received)", "Check-Out (Delivered)"])
+
+    if st.button("Generate Handover Sheet 📄"):
+        if not df.empty:
+            # فلترة البيانات بناءً على التاريخ ونوع الحركة
+            date_str = ho_date.strftime("%Y-%m-%d")
+            filtered_ho = df.copy()
             
-        st.markdown("---")
-        date_str = handover_date.strftime("%Y-%m-%d")
-        
-        # 1. Received ULDs (Check-In)
-        st.markdown("### 📥 ULDs Received (معدات تم استلامها)")
-        in_mask = df["Date"].astype(str).str.startswith(date_str)
-        if handover_agent != "All":
-            in_mask = in_mask & (df["Employee Name"] == handover_agent)
+            if ho_airline != "All":
+                filtered_ho = filtered_ho[filtered_ho["Airline"] == ho_airline]
+                
+            if ho_type == "Check-In (Received)":
+                filtered_ho = filtered_ho[filtered_ho["Date"].astype(str).str.startswith(date_str)]
+                uld_list = filtered_ho[["ULD No", "Remarks_in"]].values.tolist()
+            else:
+                filtered_ho = filtered_ho[filtered_ho["Check-out Date"].astype(str).str.startswith(date_str)]
+                uld_list = filtered_ho[["ULD No", "Remarks_out"]].values.tolist()
             
-        df_in = df[in_mask][["Date", "ULD No", "Airline", "Flight No", "Employee Name", "ULD Status"]]
-        st.dataframe(df_in, use_container_width=True, hide_index=True)
-        
-        # 2. Dispatched ULDs (Check-Out)
-        st.markdown("### 📤 ULDs Dispatched (معدات تم خروجها)")
-        out_mask = df["Check-out Date"].astype(str).str.startswith(date_str)
-        if handover_agent != "All":
-            # نبحث عن اسم الموظف داخل الملاحظات لأننا نسجل اسم موظف الخروج هناك
-            out_mask = out_mask & (df["Remarks_out"].astype(str).str.contains(handover_agent, na=False))
-            
-        df_out = df[out_mask][["Check-out Date", "ULD No", "Airline", "ULD Status", "Remarks_out"]]
-        st.dataframe(df_out, use_container_width=True, hide_index=True)
-        
-        # Print / Signature Area
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        col_sig1, col_sig2 = st.columns(2)
-        with col_sig1:
-            st.markdown(f"**Handed Over By (المُسلِّم):** {'_' * 30}")
-        with col_sig2:
-            st.markdown(f"**Received By (المُستلِم):** {'_' * 30}")
-            
-        st.info("💡 لطباعة النموذج أو حفظه كـ PDF، اضغط على `Ctrl + P` (أو `Cmd + P` في الماك) من لوحة المفاتيح.")
-    else:
-        st.info("No data available to generate handover.")
+            if len(uld_list) == 0:
+                st.warning("⚠️ No ULDs found for the selected criteria.")
+            else:
+                # تجهيز البيانات بحد أقصى 40 صف ليطابق النموذج
+                ulds_data = [{"uld": item[0], "comment": item[1]} for item in uld_list]
+                while len(ulds_data) < 40:
+                    ulds_data.append({"uld": "", "comment": ""})
+                ulds_data = ulds_data[:40] # في حال تجاوز ال 40 يتم اقتطاعه
+                
+                # بناء هيكل الـ HTML
+                rows_html = ""
+                for i in range(20):
+                    sn1, uld1, com1 = i + 1, ulds_data[i]["uld"], ulds_data[i]["comment"]
+                    sn2, uld2, com2 = i + 21, ulds_data[20+i]["uld"], ulds_data[20+i]["comment"]
+                    
+                    rows_html += f"""
+                    <tr>
+                        <td>{com2}</td>
+                        <td class="bold-text">{uld2}</td>
+                        <td>{sn2}</td>
+                        <td>{com1}</td>
+                        <td class="bold-text">{uld1}</td>
+                        <td>{sn1}</td>
+                    </tr>
+                    """
+                
+                html_template = f"""
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Handover Sheet</title>
+                    <style>
+                        body {{ font-family: Arial, sans-serif; font-size: 11px; margin: 20px; }}
+                        .header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ed1c24; padding-bottom: 10px; margin-bottom: 20px; }}
+                        .logo {{ color: #ed1c24; font-size: 20px; font-weight: bold; display: flex; align-items: center; }}
+                        .logo span {{ margin-left: 5px; color: black; font-size: 14px; font-weight: normal; }}
+                        .title {{ color: #ed1c24; font-size: 16px; font-weight: bold; }}
+                        .sub-info {{ display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; }}
+                        .red-text {{ color: #ed1c24; font-size: 10px; margin-bottom: 15px; }}
+                        .arabic-text {{ direction: rtl; text-align: right; margin-bottom: 5px; font-weight: bold; }}
+                        table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; text-align: center; }}
+                        th, td {{ border: 1px solid black; padding: 6px; }}
+                        th {{ background-color: #f9f9f9; font-size: 10px; }}
+                        .bold-text {{ font-weight: bold; }}
+                        .signatures {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                        .signatures th, .signatures td {{ border: 1px solid black; padding: 10px; text-align: left; height: 30px; }}
+                        .signatures th {{ text-align: center; background-color: #f9f9f9; }}
+                        .text-right {{ text-align: right; }}
+                        @media print {{
+                            @page {{ size: A4 portrait; margin: 10mm; }}
+                            body {{ margin: 0; }}
+                            .no-print {{ display: none; }}
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">CACC <span>CARGOLINX</span></div>
+                        <div class="title">Empty ULDs Handover Sheet</div>
+                    </div>
+                    
+                    <div class="sub-info">
+                        <div>We hereby declare that we received below</div>
+                        <div style="font-size: 14px;">ULD {ho_airline if ho_airline != 'All' else ''}</div>
+                        <div>{date_str}</div>
+                    </div>
+                    
+                    <div class="red-text">*In case of any deviation, please insert comments in below table</div>
+                    
+                    <div class="arabic-text">
+                        تم استلام المعدات المذكورة ادناه ULD {ho_airline if ho_airline != 'All' else ''} {date_str} وهي في حالة ظاهرية سليمة.
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Comment<br><span dir="rtl">ملاحظات ان وجدت</span></th>
+                                <th>ULD ID<br><span dir="rtl">أرقام المعدات</span></th>
+                                <th>SN<br><span dir="rtl">م</span></th>
+                                <th>Comment<br><span dir="rtl">ملاحظات ان وجدت</span></th>
+                                <th>ULD ID<br><span dir="rtl">أرقام المعدات</span></th>
+                                <th>SN<br><span dir="rtl">م</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows_html}
+                        </tbody>
+                    </table>
+                    
+                    <table class="signatures">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Ramp Handler Rep</th>
+                                <th>CACC Operation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-right">Name -- الاسم</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="text-right">Signature -- التوقيع</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="text-right">Permit no. -- تصريح رقم</td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="text-right">Date / Time of handover 1st ULD --<br>وقت تسليم اول معدة // التاريخ</td>
+                                <td style="text-align: center;">{date_str}</td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <td class="text-right">Date / Time of handover last ULD --<br>وقت تسليم اخر معدة // التاريخ</td>
+                                <td style="text-align: center;">{date_str}</td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="text-align: right; font-size: 9px; margin-top: 10px;">CL/CSA/EUHS-V1.0/AUG23</div>
+                </body>
+                </html>
+                """
+                
+                st.success("✅ Sheet generated successfully! Click below to download.")
+                st.download_button(
+                    label="📥 Download Handover Sheet (HTML)",
+                    data=html_template.encode('utf-8'),
+                    file_name=f"Handover_Sheet_{ho_airline}_{date_str}.html",
+                    mime="text/html"
+                )
+                st.info("💡 **نصيحة للطباعة:** قم بفتح الملف المحمل في متصفحك (مثل Chrome) واضغط على `Ctrl + P` لطباعته أو حفظه بصيغة PDF. التصميم معد ليناسب مقاس ورقة A4 مباشرةً.")
+        else:
+            st.error("No data available in the database.")
 
 # ----------------- Footer -----------------
 footer = """<div style="position: fixed; left: 0; bottom: 0; width: 100%; text-align: center; color: #6c757d; padding: 10px; border-top: 1px solid #eaeaea; background-color: white; z-index: 100;">Designed by <b>Ahmed Ragab</b> ©</div>"""
